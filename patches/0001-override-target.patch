@@ -1,0 +1,28 @@
+--- a/cli/build.rs
++++ b/cli/build.rs
+@@ -327,7 +327,7 @@
+   let snapshot_options = SnapshotOptions {
+     ts_version: ts::version(),
+     v8_version: deno_core::v8::VERSION_STRING,
+-    target: std::env::var("TARGET").unwrap(),
++    target: std::env::var("OVERRIDE_TARGET").unwrap(),
+   };
+ 
+   deno_runtime::snapshot::create_runtime_snapshot(
+--- a/runtime/ops/bootstrap.rs
++++ b/runtime/ops/bootstrap.rs
+@@ -44,13 +44,7 @@
+ impl Default for SnapshotOptions {
+   fn default() -> Self {
+     let arch = std::env::consts::ARCH;
+-    let platform = std::env::consts::OS;
+-    let target = match platform {
+-      "macos" => format!("{}-apple-darwin", arch),
+-      "linux" => format!("{}-unknown-linux-gnu", arch),
+-      "windows" => format!("{}-pc-windows-msvc", arch),
+-      rest => format!("{}-{}", arch, rest),
+-    };
++    let target = format!("{}-linux-android", arch);
+ 
+     Self {
+       ts_version: "n/a".to_owned(),

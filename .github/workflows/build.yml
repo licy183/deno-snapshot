@@ -1,0 +1,90 @@
+name: Build Deno Snapshot
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - v**
+  pull_request:
+jobs:
+  build-x86:
+    name: Build Snapshot (x86_64)
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        path: ${{ github.workspace }}
+    - name: Build Snapshot
+      env:
+        HOST_ARCH: x86_64
+      run: |
+        bash ./build.sh
+    - name: Waiting for debugger
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+    - name: Upload Build Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: deno-snapshot-x86_64-${{ github.sha }}
+        path: ${{ github.workspace }}/build/
+        include-hidden-files: true
+        overwrite: true
+        compression-level: 0
+  build-arm:
+    name: Build Snapshot (arm64)
+    runs-on: ubuntu-22.04-arm
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@main
+      with:
+        path: ${{ github.workspace }}
+    - name: Build Snapshot
+      env:
+        HOST_ARCH: aarch64
+      run: |
+        bash ./build.sh
+    - name: Waiting for debugger
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+    - name: Upload Build Archive
+      uses: actions/upload-artifact@v4
+      with:
+        name: deno-snapshot-arm64-${{ github.sha }}
+        path: ${{ github.workspace }}/build/
+        include-hidden-files: true
+        overwrite: true
+        compression-level: 0
+  release:
+    name: Create Github Release
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    needs: [ build-x86, build-arm ]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Fetch archives
+        uses: actions/download-artifact@v4
+        with:
+          path: ./
+      - name: Copy archives
+        run: |
+          cp deno-snapshot-*-${{ github.sha }}/*.tar.bz2 ./
+      - name: Get checksums
+        id: checksums
+        run: |
+          checksums=$(printf 'SHA-256:\n```\n%s\n```\n' "$(sha256sum *.tar.bz2)")
+          checksums="${checksums//'%'/'%25'}"
+          checksums="${checksums//$'\n'/'%0A'}"
+          checksums="${checksums//$'\r'/'%0D'}"
+          echo "::set-output name=checksums::$checksums"
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+      - name: Publish GitHub release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: "*.tar.bz2"
+          file_glob: true
+          release_name: "Deno Snapshots" 
+          tag: ${{ steps.tag.outputs.tag }}
+          body: ${{ steps.checksums.outputs.checksums }}
