@@ -1,9 +1,9 @@
---- a/cli/build.rs
-+++ b/cli/build.rs
-@@ -327,7 +327,7 @@
+--- a/cli/snapshot/build.rs
++++ b/cli/snapshot/build.rs
+@@ -19,7 +19,7 @@
    let snapshot_options = SnapshotOptions {
-     ts_version: ts::version(),
-     v8_version: deno_core::v8::VERSION_STRING,
+     ts_version: shared::TS_VERSION.to_string(),
+     v8_version: deno_runtime::deno_core::v8::VERSION_STRING,
 -    target: std::env::var("TARGET").unwrap(),
 +    target: std::env::var("OVERRIDE_TARGET").unwrap(),
    };
