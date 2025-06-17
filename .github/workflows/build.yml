@@ -17,7 +17,7 @@ jobs:
         path: ${{ github.workspace }}
     - name: Add swap
       run: |
-        sudo swapoff /swapfile
+        sudo swapoff /swapfile || true
         sudo fallocate -l 6G /swapfile
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
@@ -48,7 +48,7 @@ jobs:
         path: ${{ github.workspace }}
     - name: Add swap
       run: |
-        sudo swapoff /swapfile
+        sudo swapoff /swapfile || true
         sudo fallocate -l 6G /swapfile
         sudo chmod 600 /swapfile
         sudo mkswap /swapfile
